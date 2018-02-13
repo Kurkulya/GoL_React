@@ -1,5 +1,5 @@
 import './App.scss';
-import logo from '../../images/earth.png';
+import logo from '../../images/logo.svg';
 import React, { Component } from 'react';
 
 class App extends Component {
