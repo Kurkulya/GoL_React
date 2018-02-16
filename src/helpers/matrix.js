@@ -4,11 +4,16 @@ class Matrix {
     constructor (matrixSize, cellSize, canvas) {
         this.ctx = canvas.getContext('2d');
         this.window = matrixSize;
-        this.width = matrixSize.width / cellSize;
-        this.height = matrixSize.height / cellSize;
+        this.width = Math.floor(matrixSize.width / cellSize);
+        this.height = Math.floor(matrixSize.height / cellSize);
         this.cellSize = cellSize;
+        this.ctx.strokeRect(0, 0, matrixSize.width, matrixSize.height);
+        this.ctx.fillStyle = '#444';
+        this.ctx.fillRect(0,0,this.window.width, this.window.height);
         this.matrix = this.create();
         this.mirrorMatrix = this.create();
+        this.randomise();
+        this.tick();
         return this;
     }
     create = () => {
@@ -21,9 +26,13 @@ class Matrix {
     randomise = () => {
         for (let i = 0; i < this.width; i++) {
             for (let j = 0; j < this.height; j++) {
+                this.mirrorMatrix[i][j] = {
+                    isAlive: true,
+                    color: null
+                };
                 this.matrix[i][j] = {
-                    isAlive: Math.random() >= 0.5,
-                    color: Konva.Util.getRandomColor()
+                    isAlive: false,
+                    color: '#ffcc11'
                 };
             }
         }
@@ -34,15 +43,22 @@ class Matrix {
         requestAnimationFrame(this.tick);
     };
     draw = () => {
-        this.ctx.clearRect(0, 0, this.window.width, this.window.height);
         for (let i = 0; i < this.width; i++) {
             for (let j = 0; j < this.height; j++) {
-                if (this.matrix[i][j].isAlive) {
-                    this.ctx.fillStyle = this.matrix[i][j].color;
-                    this.ctx.strokeStyle = 'black';
-                    this.ctx.shadowBlur = 1;
-                    this.ctx.fillRect(i * this.cellSize, j * this.cellSize, this.cellSize, this.cellSize);
-                    this.ctx.strokeRect(i * this.cellSize, j * this.cellSize, this.cellSize, this.cellSize);
+                if (this.matrix[i][j].isAlive !== this.mirrorMatrix[i][j].isAlive) {
+                    this.ctx.beginPath();
+                    this.ctx.arc(i * this.cellSize + this.cellSize / 2, j * this.cellSize + this.cellSize / 2, this.cellSize / 2, 0, 2 * Math.PI);
+                    if (this.matrix[i][j].isAlive) {
+                        this.ctx.fillStyle = this.matrix[i][j].color;
+                        this.ctx.fill();
+                        this.ctx.strokeStyle = "#666";
+                        this.ctx.stroke();
+                    } else {
+                        this.ctx.strokeStyle = "#666";
+                        this.ctx.stroke();
+                        this.ctx.fillStyle = "#444";
+                        this.ctx.fill();
+                    }
                 }
             }
         }
@@ -51,6 +67,7 @@ class Matrix {
         for (let j = 0; j < this.width; j++) {
             for (let k = 0; k < this.height; k++) {
                 let totalCells = 0;
+                let color = '#ffcc11';
                 for (let w = j - 1; w < j + 2; w++) {
                     for (let h = k - 1; h < k + 2; h++) {
                         const row = w < 0
@@ -63,8 +80,9 @@ class Matrix {
                             : h >= this.height
                                 ? h - this.height
                                 : h;
-                        if ((row !== j || col !== k) && this.matrix[row][col].isAlive === true) {
+                        if ((row !== j || col !== k) && this.matrix[row][col].isAlive) {
                             totalCells++;
+                            if (this.matrix[row][col].color !== '#ffcc11') color = this.matrix[row][col].color;
                         }
                     }
                 }
@@ -73,7 +91,7 @@ class Matrix {
                         this.mirrorMatrix[j][k] = this.matrix[j][k];
                         break;
                     case 3:
-                        this.mirrorMatrix[j][k] = {...this.matrix[j][k], isAlive: true};
+                        this.mirrorMatrix[j][k] = {...this.matrix[j][k], isAlive: true, color: color};
                         break;
                     default:
                         this.mirrorMatrix[j][k] = {...this.matrix[j][k], isAlive: false};
